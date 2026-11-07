@@ -2,7 +2,7 @@ name: HealthSync
 options:
   bundleIdPrefix: de.hannessuhr
   deploymentTarget:
-    iOS: "17.0"
+    iOS: "18.0"
 targets:
   HealthSync:
     type: application
@@ -10,7 +10,7 @@ targets:
     sources: [HealthSync]
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: de.hannessuhr.healthsync
+        PRODUCT_BUNDLE_IDENTIFIER: com.alexlee.healthsync
         INFOPLIST_FILE: HealthSync/Info.plist
         CODE_SIGN_ENTITLEMENTS: HealthSync/HealthSync.entitlements
         CODE_SIGN_STYLE: Automatic
@@ -29,7 +29,7 @@ targets:
       - target: HealthSync
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: de.hannessuhr.healthsync.tests
+        PRODUCT_BUNDLE_IDENTIFIER: com.alexlee.healthsync.tests
         GENERATE_INFOPLIST_FILE: YES
 
 schemes:

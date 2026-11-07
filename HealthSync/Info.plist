@@ -13,6 +13,6 @@
   <key>UISupportedInterfaceOrientations</key><array><string>UIInterfaceOrientationPortrait</string></array>
   <key>NSHealthShareUsageDescription</key><string>Reads Apple Health so your own Mac can answer questions about your data. Read-only, nothing leaves your devices.</string>
   <key>UIBackgroundModes</key><array><string>processing</string></array>
-  <key>BGTaskSchedulerPermittedIdentifiers</key><array><string>de.hannessuhr.healthsync.refresh</string></array>
+  <key>BGTaskSchedulerPermittedIdentifiers</key><array><string>com.alexlee.healthsync.refresh</string></array>
   <key>ITSAppUsesNonExemptEncryption</key><false/>
 </dict></plist>

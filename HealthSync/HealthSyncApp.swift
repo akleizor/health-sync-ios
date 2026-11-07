@@ -36,6 +36,8 @@ let SPECS: [Spec] = [
     .init(id: .bodyFatPercentage, name: "body_fat_percentage", label: "Körperfett", cat: "Körper", unit: "%", cumulative: false),
     .init(id: .vo2Max, name: "vo2_max", label: "VO₂max", cat: "Vitalwerte", unit: "mL/min/kg", cumulative: false),
     .init(id: .walkingSpeed, name: "walking_speed", label: "Gehgeschwindigkeit", cat: "Vitalwerte", unit: "km/hr", cumulative: false),
+    .init(id: .appleSleepingWristTemperature, name: "apple_sleeping_wrist_temperature", label: "Handgelenktemperatur", cat: "Vitalwerte", unit: "degC", cumulative: false),
+    .init(id: .appleSleepingBreathingDisturbances, name: "breathing_disturbances", label: "Atemstörungen", cat: "Vitalwerte", unit: "count", cumulative: false),
 ]
 
 /// Which metrics the owner wants exported. Stored by name, so the table above can grow
@@ -59,7 +61,7 @@ enum Selection {
 
 let LOOKBACK_DAYS = 730          // ponytail: one constant, ~2 years. Raise if you want deeper history.
 let SLEEP_NAME = "sleep_analysis"
-let REFRESH_ID = "de.hannessuhr.healthsync.refresh"
+let REFRESH_ID = "com.alexlee.healthsync.refresh"
 let BOOKMARK_KEY = "folderBookmark"
 
 // MARK: - Export
@@ -174,7 +176,7 @@ struct Exporter {
     private func sleep(from start: Date) async throws -> (daily: [(d: String, v: Double)], sessions: [[String: Any]]) {
         guard let type = HKObjectType.categoryType(forIdentifier: .sleepAnalysis) else { return ([], []) }
         let pred = HKQuery.predicateForSamples(withStart: start, end: nil, options: .strictStartDate)
-        let samples: [HKCategorySample] = try await withCheckedThrowingContinuation { cont in
+        let all: [HKCategorySample] = try await withCheckedThrowingContinuation { cont in
             let q = HKSampleQuery(sampleType: type, predicate: pred, limit: HKObjectQueryNoLimit,
                                   sortDescriptors: nil) { _, items, error in
                 if let error { return cont.resume(throwing: error) }
@@ -182,6 +184,7 @@ struct Exporter {
             }
             store.execute(q)
         }
+        let samples = Self.preferWatch(all)
         var perDay: [String: Double] = [:]
         for s in Self.timeline(from: samples, values: Self.asleepRaw) {
             // credited to the WAKE day (endDate), same rule as before and as the server documents
@@ -189,6 +192,15 @@ struct Exporter {
         }
         let daily = perDay.map { ($0.key, ($0.value * 1000).rounded() / 1000) }
         return (daily, Self.sessions(from: samples))
+    }
+
+    /// Third-party sleep apps (AutoSleep) write long "asleep" blocks over the Watch's staged
+    /// night; merged, they stretch the night past what the Watch measured. Keep the Watch.
+    /// shortcut: all-or-nothing over the whole lookback; a night with no Watch data drops out
+    /// once any Watch data exists. Filter per night if the Watch is often left off.
+    static func preferWatch(_ samples: [HKCategorySample]) -> [HKCategorySample] {
+        let watch = samples.filter { $0.sourceRevision.productType?.hasPrefix("Watch") == true }
+        return watch.isEmpty ? samples : watch
     }
 
     // .asleep is the pre-iOS-16 name for .asleepUnspecified: same raw value (1), so listing both
@@ -456,6 +468,7 @@ extension Spec {
         case .bodyMass: return .gramUnit(with: .kilo)
         case .vo2Max: return HKUnit.literUnit(with: .milli).unitDivided(by: .gramUnit(with: .kilo).unitMultiplied(by: .minute()))
         case .walkingSpeed: return .meterUnit(with: .kilo).unitDivided(by: .hour())
+        case .appleSleepingWristTemperature: return .degreeCelsius()
         default: return .count()
         }
     }
